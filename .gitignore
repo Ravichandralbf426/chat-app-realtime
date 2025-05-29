@@ -1,0 +1,4 @@
+nodemolecules/
+.env
+client/nodemolecules/
+*.log
