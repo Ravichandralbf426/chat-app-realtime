@@ -5,7 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:5055'); // your backend URL
+const socket = io("https://<your-backend-name>.onrender.com");
+ // your backend URL
 
 function ChatRoom() {
   const location = useLocation();
@@ -19,7 +20,8 @@ function ChatRoom() {
   useEffect(() => {
     socket.emit('join_room', room);
     // Load old messages
-axios.get(`http://localhost:5050/api/messages/${room}`)
+axios.get("https://<your-backend-name>.onrender.com/api/messages/" + room)
+
   .then(res => {
     setMessages(res.data);
   })
