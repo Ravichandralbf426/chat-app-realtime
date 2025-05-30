@@ -1,0 +1,79 @@
+// pages/ChatRoom.js
+import axios from 'axios';
+import '../styles/ChatRoom.css';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5055'); // your backend URL
+
+function ChatRoom() {
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const username = query.get('username');
+  const room = query.get('room');
+
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    socket.emit('join_room', room);
+    // Load old messages
+axios.get(`http://localhost:5050/api/messages/${room}`)
+  .then(res => {
+    setMessages(res.data);
+  })
+  .catch(err => {
+    console.error('Failed to load messages', err);
+  });
+
+
+    socket.on('receive_message', (data) => {
+      setMessages((prev) => [...prev, data]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [room]);
+
+  const sendMessage = () => {
+    if (message.trim()) {
+      const msg = {
+        sender: username,
+        content: message,
+        room,
+      };
+      socket.emit('send_message', msg);
+      setMessages((prev) => [...prev, msg]);
+      setMessage('');
+    }
+  };
+
+  return (
+  <div className="chat-container">
+    <h2>Room: {room}</h2>
+
+    <div className="message-list">
+      {messages.map((msg, index) => (
+        <div key={index} className="message">
+          <strong>{msg.sender}:</strong> {msg.content}
+        </div>
+      ))}
+    </div>
+
+    <div className="input-area">
+      <input
+        placeholder="Type a message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+      />
+      <button onClick={sendMessage}>Send</button>
+    </div>
+  </div>
+);
+
+}
+
+export default ChatRoom;
