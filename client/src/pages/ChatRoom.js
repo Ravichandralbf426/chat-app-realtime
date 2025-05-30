@@ -18,26 +18,26 @@ function ChatRoom() {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    socket.emit('join_room', room);
-    // Load old messages
-axios.get("https://<your-backend-name>.onrender.com/api/messages/" + room)
+  socket.emit('join_room', room);
 
-  .then(res => {
-    setMessages(res.data);
-  })
-  .catch(err => {
-    console.error('Failed to load messages', err);
-  });
-
-
-    socket.on('receive_message', (data) => {
-      setMessages((prev) => [...prev, data]);
+  // 👉 Load old messages from MongoDB
+  axios.get(`https://<your-backend>.onrender.com/api/messages/${room}`)
+    .then((res) => {
+      setMessages(res.data); // Set messages from DB
+    })
+    .catch((err) => {
+      console.error("❌ Failed to fetch old messages:", err);
     });
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [room]);
+  socket.on('receive_message', (data) => {
+    setMessages((prev) => [...prev, data]);
+  });
+
+  return () => {
+    socket.disconnect();
+  };
+}, [room]);
+
 
   const sendMessage = () => {
     if (message.trim()) {
