@@ -54,6 +54,7 @@ io.on('connection', (socket) => {
   socket.on('send_message', async (data) => {
     const { sender, content, room } = data;
     socket.to(room).emit('receive_message', data);
+console.log("Saving message:", { sender, content, room });
 
     try {
       const newMessage = new Message({ sender, content, room });

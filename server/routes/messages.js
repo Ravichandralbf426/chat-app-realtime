@@ -22,5 +22,18 @@ router.get('/:room', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch messages', details: err });
   }
 });
+// ✅ Test Route - Save Message via API
+router.post('/test-save', async (req, res) => {
+  const { sender, content, room } = req.body;
+
+  try {
+    const msg = new Message({ sender, content, room });
+    await msg.save();
+    res.status(201).json({ success: true, saved: msg });
+  } catch (err) {
+    console.error('❌ Save failed:', err);
+    res.status(500).json({ error: 'Save failed', details: err });
+  }
+});
 
 module.exports = router;
