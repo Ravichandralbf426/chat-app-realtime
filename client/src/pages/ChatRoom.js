@@ -1,3 +1,5 @@
+// src/pages/ChatRoom.js
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
@@ -7,32 +9,42 @@ import '../styles/ChatRoom.css';
 function ChatRoom() {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
-  const username = query.get('username');
-  const room = query.get('room');
+  const username = query.get('username')?.trim();
+  const room = query.get('room')?.trim();
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-
-  const socketRef = useRef(); // ✅ Correctly placed here
+  const socketRef = useRef();
 
   useEffect(() => {
-    // ✅ Establish socket connection once
-    socketRef.current = io("https://chat-app-realtime-7r66.onrender.com");
+    // ✅ Establish WebSocket connection
+    socketRef.current = io("https://chat-app-realtime-7r66.onrender.com", {
+      transports: ["websocket"], // Force WebSocket
+    });
 
-    socketRef.current.emit('join_room', room);
+    socketRef.current.on('connect', () => {
+      console.log("🟢 Socket connected:", socketRef.current.id);
+      socketRef.current.emit('join_room', room);
+    });
 
-    // ✅ Fetch old messages
-    axios.get(`https://chat-app-realtime-7r66.onrender.com/api/messages/${room}`)
+    socketRef.current.on('connect_error', (err) => {
+      console.error("❌ Socket connection error:", err.message);
+    });
+
+    // ✅ Fetch previously saved messages from MongoDB
+    axios
+      .get(`https://chat-app-realtime-7r66.onrender.com/api/messages/${room}`)
       .then((res) => {
-        console.log("✅ Loaded messages:", res.data);
+        console.log("✅ Loaded messages from DB:", res.data);
         setMessages(res.data);
       })
       .catch((err) => {
-        console.error("❌ Failed to fetch old messages:", err);
+        console.error("❌ Error loading messages:", err);
       });
 
-    // ✅ Listen for new messages
+    // ✅ Listen for incoming messages from server
     socketRef.current.on('receive_message', (data) => {
+      console.log("📥 New message received:", data);
       setMessages((prev) => [...prev, data]);
     });
 
@@ -49,6 +61,7 @@ function ChatRoom() {
         room,
       };
 
+      console.log("📤 Sending message to backend:", msg);
       socketRef.current.emit('send_message', msg);
       setMessages((prev) => [...prev, msg]);
       setMessage('');
