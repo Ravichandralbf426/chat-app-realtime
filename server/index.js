@@ -52,18 +52,20 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', async (data) => {
-    const { sender, content, room } = data;
-    socket.to(room).emit('receive_message', data);
-console.log("Saving message:", { sender, content, room });
+  const { sender, content, room } = data;
+  console.log("📥 Received message from client:", data);
 
-    try {
-      const newMessage = new Message({ sender, content, room });
-      await newMessage.save();
-      console.log('✅ Message saved to MongoDB');
-    } catch (err) {
-      console.error('❌ Failed to save message:', err);
-    }
-  });
+  try {
+    const newMessage = new Message({ sender, content, room });
+    await newMessage.save();
+    console.log('✅ Message saved to MongoDB');
+  } catch (err) {
+    console.error('❌ Failed to save message to MongoDB:', err.message);
+  }
+
+  socket.to(room).emit('receive_message', data);
+});
+
 
   socket.on('disconnect', () => {
     console.log('🔴 User disconnected');
