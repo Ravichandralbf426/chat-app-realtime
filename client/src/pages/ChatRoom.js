@@ -1,10 +1,8 @@
-import axios from 'axios';
-import '../styles/ChatRoom.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
-
-const socket = io("https://chat-app-realtime-7r66.onrender.com"); // ✅ Your backend
+import axios from 'axios';
+import '../styles/ChatRoom.css';
 
 function ChatRoom() {
   const location = useLocation();
@@ -15,25 +13,31 @@ function ChatRoom() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
 
-  useEffect(() => {
-    socket.emit('join_room', room);
+  const socketRef = useRef(); // ✅ Correctly placed here
 
-    // ✅ Load messages from MongoDB
+  useEffect(() => {
+    // ✅ Establish socket connection once
+    socketRef.current = io("https://chat-app-realtime-7r66.onrender.com");
+
+    socketRef.current.emit('join_room', room);
+
+    // ✅ Fetch old messages
     axios.get(`https://chat-app-realtime-7r66.onrender.com/api/messages/${room}`)
       .then((res) => {
-        console.log("✅ Messages loaded:", res.data);
+        console.log("✅ Loaded messages:", res.data);
         setMessages(res.data);
       })
       .catch((err) => {
         console.error("❌ Failed to fetch old messages:", err);
       });
 
-    socket.on('receive_message', (data) => {
+    // ✅ Listen for new messages
+    socketRef.current.on('receive_message', (data) => {
       setMessages((prev) => [...prev, data]);
     });
 
     return () => {
-      socket.disconnect();
+      socketRef.current.disconnect();
     };
   }, [room]);
 
@@ -44,7 +48,8 @@ function ChatRoom() {
         content: message,
         room,
       };
-      socket.emit('send_message', msg);
+
+      socketRef.current.emit('send_message', msg);
       setMessages((prev) => [...prev, msg]);
       setMessage('');
     }
